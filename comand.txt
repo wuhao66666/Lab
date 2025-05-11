@@ -1,0 +1,1 @@
+dot -Tpdf output.dot -o example.pdf
