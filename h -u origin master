@@ -1,0 +1,24 @@
+[33mcommit c9393386d1955b5f5b7ad07fad1614aa977c1b7f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m2022110556[m[33m, [m[1;31morigin/2022110556[m[33m, [m[1;32mB2[m[33m)[m
+Merge: eee3f05 7a296b4
+Author: wuhao666 <3538397698@qq.com>
+Date:   Sun May 11 20:42:07 2025 +0800
+
+    Merge branch 'C4' into B2
+
+[33mcommit eee3f05341ee9919ab30cda727d5545449a7038b[m
+Author: wuhao666 <3538397698@qq.com>
+Date:   Sun May 11 20:41:57 2025 +0800
+
+    解决合并冲突
+
+[33mcommit 7a296b4b8b8495313f93f109edd2b3f8bfd1ffc1[m[33m ([m[1;32mc4[m[33m)[m
+Author: wuhao666 <3538397698@qq.com>
+Date:   Sun May 11 20:35:34 2025 +0800
+
+    修改C4上的文件
+
+[33mcommit 14a625c7f6a384d1c8c26b4b1e0636cdf9ff812e[m[33m ([m[1;31morigin/master[m[33m, [m[1;32mmaster[m[33m)[m
+Author: wuhao66666 <3538397698@qq.com>
+Date:   Sun May 11 20:07:47 2025 +0800
+
+    Initial commit
