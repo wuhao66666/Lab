@@ -1,0 +1,384 @@
+        -:    0:Source:main.cpp
+        -:    0:Graph:main.gcno
+        -:    0:Data:main.gcda
+        -:    0:Runs:1
+        -:    1:#include <iostream>
+        -:    2:#include <fstream>
+        -:    3:#include <sstream>
+        -:    4:#include <unordered_map>
+        -:    5:#include <vector>
+        -:    6:#include <queue>
+        -:    7:#include <string>
+        -:    8:#include <algorithm>
+        -:    9:#include <cmath>
+        -:   10:#include <random>
+        -:   11:#include <cctype>
+        -:   12:#include <iomanip>
+        -:   13:
+        -:   14:// 定义图结构
+        -:   15:class Graph {
+        -:   16:public:
+        1:   17:    Graph() = default;
+        1:   18:    ~Graph() = default;
+        -:   19:    
+        -:   20:    void generateGraph(const std::string& filePath);
+        -:   21:    void showDirectedGraph() const;
+        -:   22:    std::vector<std::string> queryBridgeWords(const std::string& word1, const std::string& word2) const;
+        -:   23:    std::string generateNewText(const std::string& inputText) const;
+        -:   24:    std::string calcShortestPath(const std::string& word1, const std::string& word2) const;
+        -:   25:    double calcPageRank(const std::string& word) const;
+        -:   26:    std::string randomWalk() const;
+        -:   27:    void exportGraphvizCode(const std::string& outputFilePath) const;
+        -:   28:    void calculatePageRank(double d = 0.85); // 将 calculatePageRank 函数声明为 public 成员函数
+        -:   29:    
+        -:   30:private:
+        -:   31:    struct Node {
+        -:   32:        std::unordered_map<std::string, int> edges;
+        -:   33:        double pageRank = 1.0;
+        -:   34:    };
+        -:   35:    
+        -:   36:    std::unordered_map<std::string, Node> nodes;
+        -:   37:    
+        -:   38:    void addEdge(const std::string& from, const std::string& to);
+        -:   39:    std::string removePunctuation(const std::string& str) const;
+        -:   40:};
+        -:   41:
+        1:   42:void Graph::generateGraph(const std::string& filePath) {
+        1:   43:    std::ifstream file(filePath);
+        1:   44:    if (!file.is_open()) {
+        1:   45:        std::cerr << "无法打开文件: " << filePath << std::endl;
+        1:   46:        return;
+        -:   47:    }
+        -:   48:
+    #####:   49:    std::string line, word, prevWord;
+    #####:   50:    while (std::getline(file, line)) {
+    #####:   51:        line = removePunctuation(line);
+    #####:   52:        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+    #####:   53:        std::istringstream iss(line);
+    #####:   54:        std::string token;
+    #####:   55:        while (iss >> token) {
+    #####:   56:            if (token.empty()) {
+    #####:   57:                continue;
+        -:   58:            }
+    #####:   59:            if (!prevWord.empty()) {
+    #####:   60:                addEdge(prevWord, token);
+        -:   61:            }
+    #####:   62:            prevWord = token;
+        -:   63:        }
+    #####:   64:        prevWord.clear();
+        -:   65:    }
+    #####:   66:    file.close();
+        -:   67:}
+        -:   68:
+    #####:   69:void Graph::addEdge(const std::string& from, const std::string& to) {
+    #####:   70:    if (nodes.find(from) == nodes.end()) {
+    #####:   71:        nodes[from] = Node();
+        -:   72:    }
+    #####:   73:    if (nodes.find(to) == nodes.end()) {
+    #####:   74:        nodes[to] = Node();
+        -:   75:    }
+    #####:   76:    nodes[from].edges[to]++;
+    #####:   77:}
+        -:   78:
+    #####:   79:void Graph::showDirectedGraph() const {
+    #####:   80:    for (const auto& node : nodes) {
+    #####:   81:        std::cout << node.first << ": ";
+    #####:   82:        for (const auto& edge : node.second.edges) {
+    #####:   83:            std::cout << edge.first << "(" << edge.second << ") ";
+        -:   84:        }
+    #####:   85:        std::cout << std::endl;
+        -:   86:    }
+    #####:   87:}
+        -:   88:
+        1:   89:std::vector<std::string> Graph::queryBridgeWords(const std::string& word1, const std::string& word2) const {
+        1:   90:    std::vector<std::string> bridgeWords;
+       1*:   91:    if (nodes.find(word1) == nodes.end() || nodes.find(word2) == nodes.end()) {
+        1:   92:        return bridgeWords;
+        -:   93:    }
+    #####:   94:    for (const auto& edge1 : nodes.at(word1).edges) {
+    #####:   95:        if (nodes.at(edge1.first).edges.find(word2) != nodes.at(edge1.first).edges.end()) {
+    #####:   96:            bridgeWords.push_back(edge1.first);
+        -:   97:        }
+        -:   98:    }
+    #####:   99:    return bridgeWords;
+        -:  100:}
+        -:  101:
+    #####:  102:std::string Graph::generateNewText(const std::string& inputText) const {
+    #####:  103:    std::istringstream iss(inputText);
+    #####:  104:    std::string word, prevWord, result;
+    #####:  105:    while (iss >> word) {
+    #####:  106:        word = removePunctuation(word);
+    #####:  107:        std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+    #####:  108:        if (word.empty()) {
+    #####:  109:            continue;
+        -:  110:        }
+    #####:  111:        if (!prevWord.empty()) {
+    #####:  112:            auto bridgeWords = queryBridgeWords(prevWord, word);
+    #####:  113:            if (!bridgeWords.empty()) {
+    #####:  114:                result += " " + bridgeWords[0]; // 直接选择第一个桥接词
+        -:  115:            }
+        -:  116:        }
+    #####:  117:        result += " " + word;
+    #####:  118:        prevWord = word;
+        -:  119:    }
+    #####:  120:    if (!result.empty() && result.front() == ' ') {
+    #####:  121:        result.erase(result.begin());
+        -:  122:    }
+    #####:  123:    return result;
+        -:  124:}
+        -:  125:
+    #####:  126:std::string Graph::calcShortestPath(const std::string& word1, const std::string& word2) const {
+    #####:  127:    if (nodes.find(word1) == nodes.end() || nodes.find(word2) == nodes.end()) {
+    #####:  128:        return "No path found";
+        -:  129:    }
+    #####:  130:    std::unordered_map<std::string, double> distances;
+    #####:  131:    std::unordered_map<std::string, std::string> predecessors;
+    #####:  132:    std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>, std::greater<>> pq;
+        -:  133:
+    #####:  134:    for (const auto& node : nodes) {
+    #####:  135:        distances[node.first] = std::numeric_limits<double>::infinity();
+        -:  136:    }
+    #####:  137:    distances[word1] = 0;
+    #####:  138:    pq.push({0, word1});
+        -:  139:
+    #####:  140:    while (!pq.empty()) {
+    #####:  141:        auto [currentDist, currentWord] = pq.top();
+    #####:  142:        pq.pop();
+        -:  143:
+    #####:  144:        if (currentWord == word2) break;
+        -:  145:
+    #####:  146:        for (const auto& [neighbor, weight] : nodes.at(currentWord).edges) {
+    #####:  147:            double newDist = currentDist + weight;
+    #####:  148:            if (newDist < distances[neighbor]) {
+    #####:  149:                distances[neighbor] = newDist;
+    #####:  150:                predecessors[neighbor] = currentWord;
+    #####:  151:                pq.push({newDist, neighbor});
+        -:  152:            }
+        -:  153:        }
+        -:  154:    }
+        -:  155:
+    #####:  156:    if (distances[word2] == std::numeric_limits<double>::infinity()) {
+    #####:  157:        return "No path found";
+        -:  158:    }
+        -:  159:
+    #####:  160:    std::vector<std::string> path;
+    #####:  161:    for (std::string at = word2; at != word1; at = predecessors[at]) {
+    #####:  162:        path.push_back(at);
+        -:  163:    }
+    #####:  164:    path.push_back(word1);
+    #####:  165:    std::reverse(path.begin(), path.end());
+        -:  166:
+    #####:  167:    std::ostringstream oss;
+    #####:  168:    for (size_t i = 0; i < path.size(); ++i) {
+    #####:  169:        oss << path[i];
+    #####:  170:        if (i < path.size() - 1) {
+    #####:  171:            oss << " -> ";
+        -:  172:        }
+        -:  173:    }
+    #####:  174:    return oss.str();
+        -:  175:}
+        -:  176:
+        1:  177:void Graph::calculatePageRank(double d) {
+        1:  178:    size_t numNodes = nodes.size();
+        1:  179:    if (numNodes == 0) return;
+        -:  180:
+    #####:  181:    std::unordered_map<std::string, double> newPageRanks;
+    #####:  182:    std::unordered_map<std::string, double> oldPageRanks;
+        -:  183:
+    #####:  184:    for (const auto& node : nodes) {
+    #####:  185:        oldPageRanks[node.first] = node.second.pageRank;
+        -:  186:    }
+        -:  187:
+    #####:  188:    bool converged = false;
+    #####:  189:    const double threshold = 1e-6;
+    #####:  190:    int iterations = 0;
+    #####:  191:    const int maxIterations = 100;
+        -:  192:
+    #####:  193:    while (!converged && iterations < maxIterations) {
+    #####:  194:        converged = true;
+    #####:  195:        iterations++;
+        -:  196:
+    #####:  197:        newPageRanks.clear();
+        -:  198:
+    #####:  199:        for (const auto& node : nodes) {
+    #####:  200:            newPageRanks[node.first] = (1 - d) / numNodes; // 随机跳转部分
+    #####:  201:            for (const auto& neighbor : nodes) {
+    #####:  202:                if (neighbor.second.edges.find(node.first) != neighbor.second.edges.end()) {
+    #####:  203:                    newPageRanks[node.first] += d * oldPageRanks[neighbor.first] / neighbor.second.edges.size();
+        -:  204:                }
+        -:  205:            }
+        -:  206:        }
+        -:  207:
+    #####:  208:        for (auto& node : nodes) {
+    #####:  209:            double delta = std::abs(newPageRanks[node.first] - oldPageRanks[node.first]);
+    #####:  210:            if (delta > threshold) {
+    #####:  211:                converged = false;
+        -:  212:            }
+    #####:  213:            oldPageRanks[node.first] = newPageRanks[node.first];
+    #####:  214:            node.second.pageRank = newPageRanks[node.first];
+        -:  215:        }
+        -:  216:    }
+        -:  217:}
+        -:  218:
+    #####:  219:double Graph::calcPageRank(const std::string& word) const {
+    #####:  220:    if (nodes.find(word) == nodes.end()) {
+    #####:  221:        return 0.0;
+        -:  222:    }
+    #####:  223:    return nodes.at(word).pageRank;
+        -:  224:}
+        -:  225:
+    #####:  226:std::string Graph::randomWalk() const {
+    #####:  227:    std::vector<std::string> allNodes;
+    #####:  228:    for (const auto& node : nodes) {
+    #####:  229:        allNodes.push_back(node.first);
+        -:  230:    }
+        -:  231:
+    #####:  232:    std::random_device rd;
+    #####:  233:    std::mt19937 gen(rd());
+    #####:  234:    std::uniform_int_distribution<> dis(0, allNodes.size() - 1);
+        -:  235:
+    #####:  236:    std::string current = allNodes[dis(gen)];
+    #####:  237:    std::ostringstream oss;
+    #####:  238:    oss << current;
+        -:  239:
+        -:  240:    while (true) {
+    #####:  241:        if (nodes.at(current).edges.empty()) {
+    #####:  242:            break;
+        -:  243:        }
+    #####:  244:        std::vector<std::string> neighbors;
+    #####:  245:        for (const auto& edge : nodes.at(current).edges) {
+    #####:  246:            neighbors.push_back(edge.first);
+        -:  247:        }
+    #####:  248:        current = neighbors[dis(gen) % neighbors.size()];
+    #####:  249:        oss << " -> " << current;
+    #####:  250:    }
+        -:  251:
+    #####:  252:    return oss.str();
+        -:  253:}
+        -:  254:
+    #####:  255:std::string Graph::removePunctuation(const std::string& str) const {
+    #####:  256:    std::string result;
+    #####:  257:    for (char c : str) {
+    #####:  258:        if (!std::ispunct(c)) {
+    #####:  259:            result += c;
+        -:  260:        }
+        -:  261:    }
+    #####:  262:    return result;
+        -:  263:}
+        -:  264:
+    #####:  265:void Graph::exportGraphvizCode(const std::string& outputFilePath) const {
+    #####:  266:    std::ofstream outFile(outputFilePath);
+    #####:  267:    if (!outFile.is_open()) {
+    #####:  268:        std::cerr << "无法打开输出文件: " << outputFilePath << std::endl;
+    #####:  269:        return;
+        -:  270:    }
+        -:  271:
+    #####:  272:    outFile << "digraph G {\n";
+    #####:  273:    outFile << "    node [shape=box, fontname=\"Arial\", fontsize=12];\n";
+    #####:  274:    outFile << "    edge [fontname=\"Arial\", fontsize=10];\n\n";
+        -:  275:
+    #####:  276:    for (const auto& node : nodes) {
+    #####:  277:        outFile << "    " << node.first << ";\n";
+        -:  278:    }
+        -:  279:
+    #####:  280:    outFile << "\n";
+        -:  281:
+    #####:  282:    for (const auto& node : nodes) {
+    #####:  283:        for (const auto& edge : node.second.edges) {
+    #####:  284:            outFile << "    " << node.first << " -> " << edge.first << " [label=\"" << edge.second << "\"];\n";
+        -:  285:        }
+        -:  286:    }
+        -:  287:
+    #####:  288:    outFile << "}\n";
+    #####:  289:    outFile.close();
+        -:  290:
+    #####:  291:    std::cout << "Graphviz代码已成功导出到文件: " << outputFilePath << std::endl;
+        -:  292:}
+        -:  293:
+        1:  294:int main() {
+        2:  295:    Graph graph;
+        1:  296:    std::string filePath;
+        -:  297:
+        1:  298:    std::cout << "请输入文本文件路径: ";
+        1:  299:    std::cin >> filePath;
+        -:  300:
+        1:  301:    graph.generateGraph(filePath);
+        1:  302:    graph.calculatePageRank(0.85); // 计算PageRank，阻尼系数为0.85
+        -:  303:
+        -:  304:    while (true) {
+        2:  305:        std::cout << "\n请选择功能：\n";
+        2:  306:        std::cout << "1. 展示有向图\n";
+        2:  307:        std::cout << "2. 查询桥接词\n";
+        2:  308:        std::cout << "3. 根据桥接词生成新文本\n";
+        2:  309:        std::cout << "4. 计算最短路径\n";
+        2:  310:        std::cout << "5. 计算PageRank\n";
+        2:  311:        std::cout << "6. 随机游走\n";
+        2:  312:        std::cout << "7. 导出Graphviz代码到文件\n";
+        2:  313:        std::cout << "0. 退出\n";
+        -:  314:
+        -:  315:        int choice;
+        2:  316:        std::cin >> choice;
+        -:  317:
+        2:  318:        if (choice == 0) {
+        1:  319:            break;
+        -:  320:        }
+        -:  321:
+        1:  322:        switch (choice) {
+    #####:  323:            case 1:
+    #####:  324:                graph.showDirectedGraph();
+    #####:  325:                break;
+        1:  326:            case 2: {
+        2:  327:                std::string word1, word2;
+        1:  328:                std::cout << "请输入两个单词（用空格分隔）: ";
+        1:  329:                std::cin >> word1 >> word2;
+        2:  330:                auto bridgeWords = graph.queryBridgeWords(word1, word2);
+        1:  331:                if (bridgeWords.empty()) {
+        1:  332:                    std::cout << "No bridge words from " << word1 << " to " << word2 << "!\n";
+        -:  333:                } else {
+    #####:  334:                    std::cout << "The bridge words from " << word1 << " to " << word2 << " are: ";
+    #####:  335:                    for (const auto& word : bridgeWords) {
+    #####:  336:                        std::cout << word << " ";
+        -:  337:                    }
+    #####:  338:                    std::cout << std::endl;
+        -:  339:                }
+        1:  340:                break;
+        -:  341:            }
+    #####:  342:            case 3: {
+    #####:  343:                std::string inputText;
+    #####:  344:                std::cout << "请输入一行新文本: ";
+    #####:  345:                std::cin.ignore();
+    #####:  346:                std::getline(std::cin, inputText);
+    #####:  347:                std::cout << "生成的新文本: " << graph.generateNewText(inputText) << std::endl;
+    #####:  348:                break;
+        -:  349:            }
+    #####:  350:            case 4: {
+    #####:  351:                std::string word1, word2;
+    #####:  352:                std::cout << "请输入两个单词（用空格分隔）: ";
+    #####:  353:                std::cin >> word1 >> word2;
+    #####:  354:                std::cout << "最短路径: " << graph.calcShortestPath(word1, word2) << std::endl;
+    #####:  355:                break;
+        -:  356:            }
+    #####:  357:            case 5: {
+    #####:  358:                std::string word;
+    #####:  359:                std::cout << "请输入一个单词: ";
+    #####:  360:                std::cin >> word;
+    #####:  361:                std::cout << "PageRank of " << word << ": " << graph.calcPageRank(word) << std::endl;
+    #####:  362:                break;
+        -:  363:            }
+    #####:  364:            case 6:
+    #####:  365:                std::cout << "随机游走路径: " << graph.randomWalk() << std::endl;
+    #####:  366:                break;
+    #####:  367:            case 7: {
+    #####:  368:                std::string outputFilePath;
+    #####:  369:                std::cout << "请输入输出文件路径（例如：output.dot）: ";
+    #####:  370:                std::cin >> outputFilePath;
+    #####:  371:                graph.exportGraphvizCode(outputFilePath);
+    #####:  372:                break;
+        -:  373:            }
+    #####:  374:            default:
+    #####:  375:                std::cout << "无效的选择，请重新输入。\n";
+        -:  376:        }
+        1:  377:    }
+        -:  378:
+        1:  379:    return 0;
+        -:  380:}
